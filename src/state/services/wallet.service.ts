@@ -111,6 +111,7 @@ export const walletSlice = createSlice({
 	},
 });
 
+// eslint-disable-next-line no-empty-pattern
 export const {} = walletSlice.actions;
 
 export default walletSlice.reducer;
