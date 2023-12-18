@@ -6,7 +6,7 @@ import { RootState } from '../store';
 import { getSigner } from './wallet.service';
 
 const contractAbi = Web3VotingArtifact.abi;
-const contractAddress = '0x1A767197679f389de6a654bA903DD83A38b9977a';
+const contractAddress = '0x4B849cccf06BDAE7B0a2046f3982200808f99E51';
 const networkUrl = 'https://polygon-mumbai.infura.io/v3/43babf32ce0346fabbf1c1069418a90b';
 
 const getContract = (signer: JsonRpcSigner) =>
@@ -37,16 +37,14 @@ const initialState: contractState = {
 	errorVoting: false,
 	candidates: [
 		{
-			name: 'Barrack Obama',
-			avatarUrl:
-				'https://images.unsplash.com/photo-1580130379624-3a069adbffc5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1926&q=80',
+			name: 'Cristiano Ronaldo',
+			avatarUrl: 'https://wallpapers.com/images/high/cristiano-ronaldo-pictures-6fxmtqt0kgkyfxxf.webp',
 			voteCount: 0,
 			candidateId: 1,
 		},
 		{
-			name: 'Saroj Shrestha',
-			avatarUrl:
-				'https://media.cnn.com/api/v1/images/stellar/prod/220228151805-putin-0218.jpg?c=16x9&q=h_720,w_1280,c_fill/f_webp',
+			name: 'Lionel Messi',
+			avatarUrl: 'https://wallpapers.com/images/high/pro-football-athlete-lionel-messi-hknbojkz7nw78aza.webp',
 			voteCount: 0,
 			candidateId: 2,
 		},
@@ -54,7 +52,7 @@ const initialState: contractState = {
 	contractAddress,
 };
 
-export const fetchVoteState = createAsyncThunk<boolean, number, { state: RootState }>(
+export const fetchVoteState = createAsyncThunk<boolean, void, { state: RootState }>(
 	'contract/fetchVoteState',
 	// Declare the type your function argument here:
 	async (_, { getState }) => {
@@ -76,6 +74,20 @@ export const voteForCandidate = createAsyncThunk<void, number, { state: RootStat
 		if (signer === undefined || state.wallet.accountAddress === undefined) throw new Error(`Wallet not Connected`);
 		const contract = getContract(signer);
 		await contract.vote(candidateId);
+	},
+);
+
+export const updateCandidateVote = createAsyncThunk<{ id: number; voteCount: number }, number, { state: RootState }>(
+	'contract/updateCandidateVote',
+	// Declare the type your function argument here:
+	async (candidateId, { getState }) => {
+		const state = getState();
+		const signer = getSigner();
+		if (signer === undefined || state.wallet.accountAddress === undefined) throw new Error(`Wallet not Connected`);
+		const contract = getContract(signer);
+		const candidate = await contract.candidates(candidateId);
+		const ret = { id: Number(candidate?.id), voteCount: Number(candidate?.voteCount) };
+		return ret;
 	},
 );
 
@@ -113,6 +125,25 @@ export const contractSlice = createSlice({
 				state.isVoted = false;
 				state.isVoting = false;
 				state.errorVoting = true;
+			})
+			.addCase(updateCandidateVote.pending, (state, action) => {
+				state.isLoading = true;
+				state.isLoaded = false;
+				state.errorLoading = false;
+			})
+			.addCase(updateCandidateVote.fulfilled, (state, action) => {
+				state.isLoading = false;
+				state.isLoaded = true;
+				const candidate = state.candidates.find((x) => x?.candidateId === action.payload.id);
+				console.log({ candidate });
+				if (!candidate) return state;
+				candidate.voteCount = action.payload.voteCount;
+				return state;
+			})
+			.addCase(updateCandidateVote.rejected, (state, action) => {
+				state.isLoading = false;
+				state.isLoaded = false;
+				state.errorLoading = true;
 			});
 	},
 });

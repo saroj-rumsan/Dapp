@@ -13,5 +13,6 @@ module.exports = {
 		'import/extensions': 0,
 		'no-unused-vars': 0,
 		'consistent-return': 0,
+		'no-console': 0,
 	},
 };
